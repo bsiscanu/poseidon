@@ -1,18 +1,8 @@
 import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatSort, MatTableDataSource } from '@angular/material';
 import { DataListService } from './data-list.service';
-
-export interface PeriodicElement {
-  name: string;
-  position: number;
-  weight: number;
-  symbol: string;
-}
-
-export interface Selection {
-  resolution: string;
-  period: string;
-}
+import { map, tap } from 'rxjs/operators';
+import { Collection } from '../collection';
 
 @Component({
   selector: 'app-data-list',
@@ -21,16 +11,17 @@ export interface Selection {
 })
 export class DataListComponent implements OnInit, AfterViewInit {
 
-  public displayedColumns: string[] = ['position', 'date', 'sum', 'max', 'avg', 'min'];
   public dataSource = new MatTableDataSource<any>([]);
-
+  public columns = ['no', 'date', 'sum', 'max', 'avg', 'min'];
   public resolutions = ['raw', 'hourly', 'daily', 'monthly'];
-  public periods = ['24h', '2d', '7d'];
+  public periods = ['24h', '2d', '7d', '14d', '1m', '2m', '5m'];
 
   public selection = {
-    resolution: '',
-    period: ''
+    resolution: 'raw',
+    period: '24h'
   };
+
+  public collection: Collection;
 
   @ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
   @ViewChild(MatSort, { static: true }) sort: MatSort;
@@ -41,22 +32,39 @@ export class DataListComponent implements OnInit, AfterViewInit {
 
   }
 
-  ngOnInit() {
-    this.dataListService.load().subscribe(outcome => {
-      this.dataSource.data = outcome;
-    });
+  public ngOnInit(): void {
+    this.hydrate();
   }
 
-  ngAfterViewInit() {
+  public ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
   }
 
-  applyFilter(filterValue: string) {
+  /**
+   * Method used in the main table filter action
+   *
+   * @param {string} filterValue
+   */
+  public applyFilter(filterValue: string): void {
     this.dataSource.filter = filterValue.trim().toLowerCase();
   }
 
-  onSubmit() {
-    console.log(this.selection);
+  public onSubmit(): void {
+    this.hydrate();
+  }
+
+  /**
+   * Controls the data flow by making the HTTP request
+   */
+  private hydrate(): void {
+    this.dataListService.load(this.selection.resolution, this.selection.period)
+      .pipe(
+        tap(collection => this.collection = collection),
+        map(collection => this.dataListService.scatter(collection))
+      )
+      .subscribe(outcome => {
+        this.dataSource.data = outcome;
+      });
   }
 }

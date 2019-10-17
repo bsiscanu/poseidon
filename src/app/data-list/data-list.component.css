@@ -1,8 +1,27 @@
-table {
-  width: 100%;
+.card {
+  min-width: 80%;
 }
 
-.mat-form-field {
-  font-size: 14px;
-  width: 100%;
+.table-container {
+  display: flex;
+  flex-direction: column;
+  padding: 35px;
+}
+
+.chart-container {
+  margin-top: 33px;
+  margin-bottom: 22px;
+}
+
+.mat-table {
+  overflow: auto;
+  /*max-height: 500px;*/
+}
+
+.mat-form-field, .mat-raised-button {
+  margin-left: 15px;
+}
+
+a {
+  cursor: pointer;
 }

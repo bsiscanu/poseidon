@@ -1,6 +1,6 @@
 # Poseidon
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.3.8.
+This application is used for data visualisation of the temperature and precipitation.
 
 ## Development server
 

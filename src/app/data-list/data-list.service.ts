@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { env } from '../../environments/environment';
-import { Observable } from 'rxjs';
 import hmacSHA256 from 'crypto-js/hmac-sha256';
 import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { Collection } from '../collection';
 
 @Injectable({
   providedIn: 'root'
@@ -16,18 +17,22 @@ export class DataListService {
 
   }
 
-  public load() {
-
-    const publicKey = '5321e4b2db1e104f6e82692503212467dc443e14c33741b4';
-    const privateKey = '2b37834910994feeea3561afd506ff447cbcb9e766675e4f';
+  /**
+   * Makes the HTTP request and filters the data
+   *
+   * @param {string} resolution
+   * @param {string} period
+   * @return {Observable<Collection>}
+   */
+  public load(resolution: string, period: string): Observable<Collection> {
 
     const method = 'GET';
-    const request = '/data/00000264/raw/last/24h';
+    const request = `/data/00000264/${resolution}/last/${period}`;
     const timestamp = new Date().toUTCString();
 
-    const content = method + request + timestamp + publicKey;
-    const signature = hmacSHA256(content, privateKey);
-    const hmac = 'hmac ' + publicKey + ':' + signature;
+    const content = method + request + timestamp + env.publicKey;
+    const signature = hmacSHA256(content, env.privateKey);
+    const hmac = 'hmac ' + env.publicKey + ':' + signature;
 
     const url = env.base + request;
 
@@ -42,7 +47,7 @@ export class DataListService {
     return this.http.get(url, headers).pipe(
       map((outcome: any) => {
 
-        const collection: {[key: string]: []} = {
+        const collection: Collection = {
           dates: outcome.dates
         };
 
@@ -59,16 +64,25 @@ export class DataListService {
           }
         }
 
-        return collection.dates.map((date: Date, ind: number) => ({
-          no: ind + 1,
-          date,
-          avg: collection.avg[ind],
-          min: collection.min[ind],
-          max: collection.max[ind],
-          sum: collection.sum[ind]
-        }));
+        return collection;
       })
     );
+  }
 
+  /**
+   * Normalizes the data for the main table
+   *
+   * @param {Collection} collection
+   * @return {Array<Object>>}
+   */
+  public scatter(collection) {
+    return collection.dates.map((date: Date, ind: number) => ({
+      no: ind + 1,
+      date,
+      avg: collection.avg[ind],
+      min: collection.min[ind],
+      max: collection.max[ind],
+      sum: collection.sum[ind]
+    }));
   }
 }
